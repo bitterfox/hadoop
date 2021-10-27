@@ -1266,11 +1266,16 @@ public class DFSInputStream extends FSInputStream
         } else if (refetchToken > 0 && tokenRefetchNeeded(e, datanode.addr)) {
           refetchToken--;
           try {
+            debugLogBlockToken("Start refresh token", block, false);
             fetchBlockAt(block.getStartOffset());
           } catch (IOException fbae) {
             // ignore IOE, since we can retry it later in a loop
           }
         } else {
+          if (tokenRefetchNeeded(e, datanode.addr)) {
+            debugLogBlockToken("Token refresh failure.", block, true);
+          }
+
           String msg = "Failed to connect to " + datanode.addr + " for file "
               + src + " for block " + block.getBlock() + ":" + e;
           DFSClient.LOG.warn("Connection failure: " + msg, e);
@@ -1280,10 +1285,45 @@ public class DFSInputStream extends FSInputStream
         // Refresh the block for updated tokens in case of token failures or
         // encryption key failures.
         block = refreshLocatedBlock(block);
+        if (refetchToken == 0) {
+          debugLogBlockToken("Finish refresh token", block, false);
+        }
       } finally {
         if (reader != null) {
           reader.close();
         }
+      }
+    }
+  }
+
+  private void debugLogBlockToken(String message, LocatedBlock block, boolean warn) {
+    synchronized (infoLock) {
+      StringBuilder sb = new StringBuilder(message);
+      sb.append("block: ")
+        .append(block)
+        .append(", block token: ")
+        .append(block.getBlockToken())
+        .append(", located blocks: [");
+      for (LocatedBlock locatedBlock : locatedBlocks.getLocatedBlocks()) {
+        sb.append("(block=")
+          .append(locatedBlock)
+          .append(",token=")
+          .append(locatedBlock.getBlockToken())
+          .append("), ");
+      }
+      sb.append("], fileLength: ")
+        .append(locatedBlocks.getFileLength())
+        .append(", underConstruction: ")
+        .append(locatedBlocks.isUnderConstruction())
+        .append(", lastLocatedBlock: ")
+        .append(locatedBlocks.getLastLocatedBlock())
+        .append(", lastLocatedBlockToken: ")
+        .append(locatedBlocks.getLastLocatedBlock().getBlockToken());
+
+      if (warn) {
+        DFSClient.LOG.warn(sb.toString());
+      } else {
+        DFSClient.LOG.info(sb.toString());
       }
     }
   }
