@@ -421,6 +421,7 @@ public class SaslDataTransferServer {
         // connecting to this DN.
         sendInvalidKeySaslErrorMessage(out, ioe.getCause().getMessage());
       } else {
+        LOG.error("Generic sasl error for client {}", peer.getRemoteAddressString(), ioe);
         sendGenericSaslErrorMessage(out, ioe.getMessage());
       }
       throw ioe;
