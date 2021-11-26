@@ -573,9 +573,8 @@ public final class DataTransferSaslUtil {
     if (handshakeSecret != null) {
       builder.setHandshakeSecret(handshakeSecret);
     }
-    if (accessTokenError) {
-      builder.setAccessTokenError(true);
-    }
+
+    builder.setAccessTokenError(accessTokenError);
 
     DataTransferEncryptorMessageProto proto = builder.build();
     proto.writeDelimitedTo(out);
